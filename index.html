@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Layline — how much carpet or vinyl off the roll, and which way to lay it</title>
+  <meta name="description" content="Carpet, vinyl and lino come off a roll of a set width. Layline works out which way to run it, how many lengths you need, the metres to order, where any seam falls and how much you waste. Runs in your browser; nothing you type is uploaded.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23a56a34'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M9 8v16'/%3E%3Cpath d='M9 9c3.6 0 3.6 14 0 14'/%3E%3C/g%3E%3Cpath d='M9 9h14c3.6 0 3.6 14 0 14H9' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1><span class="logo" aria-hidden="true"></span> Layline</h1>
+      <p class="tag">Carpet and vinyl come off a roll of a set width. Layline works out which way to run it, how many lengths to order, where any seam falls and how much you waste.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <form id="form" class="card" autocomplete="off">
+      <fieldset class="group">
+        <legend>The room</legend>
+        <div class="field-row">
+          <label class="field">
+            <span>Width</span>
+            <input id="room-w" inputmode="decimal" placeholder="e.g. 3.4">
+          </label>
+          <label class="field">
+            <span>Length</span>
+            <input id="room-l" inputmode="decimal" placeholder="e.g. 4.2">
+          </label>
+          <label class="field narrow">
+            <span>in</span>
+            <select id="room-unit">
+              <option value="m">metres</option>
+              <option value="cm">cm</option>
+              <option value="ft">feet</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">Measure the widest and longest points, into any alcove or doorway, and round up.</p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>The roll</legend>
+        <div class="field-row">
+          <label class="field">
+            <span>Material</span>
+            <select id="material">
+              <option value="carpet">Carpet (4 / 5 m)</option>
+              <option value="vinyl">Sheet vinyl / lino (2 / 3 / 4 m)</option>
+              <option value="carpet-us">Carpet, US (12 / 15 ft)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Roll width</span>
+            <input id="roll-width" inputmode="decimal" list="width-list" placeholder="e.g. 4">
+            <datalist id="width-list"></datalist>
+          </label>
+          <label class="field narrow">
+            <span>in</span>
+            <select id="roll-unit">
+              <option value="m">metres</option>
+              <option value="ft">feet</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint" id="roll-note"></p>
+        <div class="field-row">
+          <label class="field">
+            <span>Trim each end (cm)</span>
+            <input id="trim" inputmode="decimal" value="10">
+          </label>
+          <label class="field">
+            <span>Pattern repeat (cm)</span>
+            <input id="repeat" inputmode="decimal" placeholder="0 if plain">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span>Price (optional)</span>
+            <input id="price" inputmode="decimal" placeholder="e.g. 18">
+          </label>
+          <label class="field narrow">
+            <span>per</span>
+            <select id="price-unit">
+              <option value="linm">running metre</option>
+              <option value="sqm">square metre</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">Trim is the overlap cut off at each end. A pattern repeat makes each length round up to a whole repeat so the pattern lines up across a seam.</p>
+      </fieldset>
+    </form>
+
+    <div class="out" id="out" aria-live="polite"></div>
+
+    <div class="actions">
+      <button id="share" class="ghost" type="button">Copy a link to this</button>
+      <span id="share-done" class="share-done" aria-live="polite"></span>
+    </div>
+
+    <section class="note">
+      <h2>Why the roll width matters</h2>
+      <p>You don't buy flooring by the square metre; you buy a length of a roll that comes in a set width, and
+      pay for the full width even where the room is narrower. Running the roll one way might cover the room in a
+      single piece, while turning it the other way leaves a join. A seam is the thing people notice and regret,
+      so Layline tries the roll both ways round, points you at a single piece when there is one, and when a seam
+      can't be helped it picks the way with the shortest run and tells you where the join lands. These are
+      planning figures: measure the widest points, add for alcoves and the doorway, and ask the shop to confirm
+      the roll width before you order.</p>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Everything runs in your browser. Nothing you type is uploaded. <a href="https://github.com/johanthegoatt/layline">Source</a>.</p>
+  </footer>
+
+  <!-- Rollo the roll -->
+  <div id="rollo-dock" class="rollo-dock">
+    <button id="rollo-hide" class="rollo-hide" type="button" aria-label="Hide Rollo">tuck away</button>
+    <div id="rollo-bubble" class="rollo-bubble" role="status" aria-live="polite"></div>
+    <button id="rollo" class="rollo" type="button" data-mood="calm" aria-label="Rollo the roll. Tap for a tip.">
+      <span class="rollo-body" aria-hidden="true">
+        <span class="rollo-end"></span>
+        <span class="rollo-face">
+          <span class="rollo-eye l"></span>
+          <span class="rollo-eye r"></span>
+          <span class="rollo-mouth"></span>
+        </span>
+      </span>
+    </button>
+  </div>
+
+  <script src="src/core.js"></script>
+  <script src="src/rollo.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

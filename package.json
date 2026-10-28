@@ -1,0 +1,10 @@
+{
+  "name": "layline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "How much carpet or vinyl to buy off a fixed-width roll, which way to run it, where any seam falls and how much you waste. Runs in the browser, nothing uploaded. With Rollo the roll.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

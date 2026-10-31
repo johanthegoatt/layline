@@ -181,6 +181,85 @@
     return tips;
   }
 
+  // Stairs are the part people get wrong. A straight flight is carpeted with
+  // one continuous strip running down the stairs, and each step takes the tread
+  // (the bit you walk on) plus the riser (the upright) plus a little to wrap
+  // over the nosing (the lip at the front). So the strip length is
+  // (tread + riser + nosing) per step, times the steps, plus any landing and a
+  // trim allowance. The strip is cut at the stair width off the roll, and the
+  // pile must run DOWN the stairs so it wears and shades the same on every step.
+  //
+  //   steps      number of steps in the flight
+  //   tread      { value, unit }  the depth you walk on
+  //   riser      { value, unit }  the upright height
+  //   width      { value, unit }  the width to carpet (full stair or a runner)
+  //   nosingMm   wrap over the front lip per step, default 25 mm
+  //   landingMm  extra strip for a landing at the top, default 0
+  //   trim       trim allowance on the whole strip, default 100 mm
+  //   rollWidth/rollUnit  the roll width, to say how many runs fit side by side
+  //   price/priceUnit     optional, per running metre ("linm") or per m2 ("sqm")
+  function stairs(opts) {
+    opts = opts || {};
+    var steps = parseInt(opts.steps, 10);
+    var tread = toMm(opts.tread && opts.tread.value, opts.tread && opts.tread.unit);
+    var riser = toMm(opts.riser && opts.riser.value, opts.riser && opts.riser.unit);
+    var width = toMm(opts.width && opts.width.value, opts.width && opts.width.unit);
+    var rollMm = toMm(opts.rollWidth, opts.rollUnit || "m");
+    var nosing = isFinite(parseFloat(opts.nosingMm)) ? Math.max(0, parseFloat(opts.nosingMm)) : 25;
+    var landing = isFinite(parseFloat(opts.landingMm)) ? Math.max(0, parseFloat(opts.landingMm)) : 0;
+    var trim = isFinite(parseFloat(opts.trim)) ? Math.max(0, parseFloat(opts.trim)) : 100;
+    var material = ROLLS[opts.material] ? opts.material : "carpet";
+
+    if (!(steps > 0)) return { ok: false, reason: "bad-steps" };
+    if (!(tread > 0) || !(riser > 0)) return { ok: false, reason: "bad-step" };
+    if (!(width > 0)) return { ok: false, reason: "bad-width" };
+
+    var perStepMm = tread + riser + nosing;
+    var runMm = steps * perStepMm + landing + trim;
+    var runM = round2(runMm / 1000);
+    var areaUsedM2 = round2((width / 1000) * (runMm / 1000));
+
+    // How many stair-width runs you can cut side by side out of one roll width,
+    // so a couple of flights share a length instead of buying it twice. A stair
+    // wider than the roll needs a join, which is best avoided on stairs.
+    var runsPerWidth = rollMm > 0 ? Math.max(1, Math.floor(rollMm / width + 1e-9)) : 1;
+    var tooWide = rollMm > 0 && width > rollMm;
+
+    var out = {
+      ok: true,
+      steps: steps,
+      perStepMm: Math.round(perStepMm),
+      nosingMm: Math.round(nosing),
+      widthMm: Math.round(width),
+      landingMm: Math.round(landing),
+      trimMm: Math.round(trim),
+      runMm: Math.round(runMm),
+      runM: runM,
+      areaUsedM2: areaUsedM2,
+      rollWidthMm: rollMm > 0 ? Math.round(rollMm) : null,
+      runsPerWidth: runsPerWidth,
+      tooWide: tooWide,
+      pile: ROLLS[material].pile
+    };
+
+    var price = parseFloat(opts.price);
+    out.cost = isFinite(price) && price > 0
+      ? round2(opts.priceUnit === "sqm" ? areaUsedM2 * price : runM * price)
+      : null;
+
+    var tips = [];
+    tips.push("Order " + runM + " m off the roll, cut " + (width / 1000).toFixed(2) + " m wide: " + steps +
+      " steps at " + Math.round(perStepMm) + " mm each (tread + riser + nosing)" +
+      (landing > 0 ? ", plus the landing" : "") + ".");
+    tips.push("Measure every tread and riser; stairs are rarely identical, and averaging them leaves you short. Add the deepest step up if they vary.");
+    if (out.pile) tips.push("Run the pile down the stairs so every step wears and shades the same way.");
+    if (tooWide) tips.push("The stair is wider than the roll, so a full-width stair would need a join. A stair runner or a wider roll avoids it.");
+    else if (runsPerWidth > 1) tips.push("You can cut " + runsPerWidth + " runs side by side from one roll width, so " + runsPerWidth + " flights of this width share the same length.");
+    tips.push("Planning figures. Fit it as one strip with no seam on the stairs, and keep the pattern, if any, running true down the flight.");
+    out.advice = tips;
+    return out;
+  }
+
   // The whole input goes in the URL fragment, which a browser never sends to a
   // server, so a shared link reopens on the same plan without anything leaving
   // the device.
@@ -203,7 +282,7 @@
   return {
     IN: IN, TO_MM: TO_MM, ROLLS: ROLLS,
     toMm: toMm, roundTo: roundTo,
-    orient: orient, plan: plan, advise: advise,
+    orient: orient, plan: plan, advise: advise, stairs: stairs,
     pack: pack, unpack: unpack
   };
 });

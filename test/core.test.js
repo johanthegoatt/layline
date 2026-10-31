@@ -92,3 +92,41 @@ test("the share link round-trips the input", () => {
   assert.deepStrictEqual(L.unpack(L.pack(state)), state);
   assert.strictEqual(L.unpack("not valid base64 @@@"), null);
 });
+
+test("stairs: strip length is tread + riser + nosing per step", function () {
+  var r = L.stairs({
+    steps: 13, tread: { value: 250, unit: "mm" }, riser: { value: 200, unit: "mm" },
+    width: { value: 900, unit: "mm" }, nosingMm: 25, rollWidth: 4, rollUnit: "m"
+  });
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.perStepMm, 475);         // 250 + 200 + 25
+  // 13 * 475 = 6175, + 0 landing + 100 trim = 6275 mm
+  assert.strictEqual(r.runMm, 6275);
+  assert.strictEqual(r.runM, 6.28);
+  // from a 4 m roll you can cut floor(4000/900) = 4 runs side by side
+  assert.strictEqual(r.runsPerWidth, 4);
+  assert.strictEqual(r.tooWide, false);
+});
+
+test("stairs: a landing adds to the strip", function () {
+  var base = { steps: 10, tread: { value: 250, unit: "mm" }, riser: { value: 200, unit: "mm" }, width: { value: 900, unit: "mm" }, nosingMm: 25 };
+  var noLanding = L.stairs(base);
+  var withLanding = L.stairs(Object.assign({ landingMm: 900 }, base));
+  assert.strictEqual(withLanding.runMm - noLanding.runMm, 900);
+});
+
+test("stairs: a stair wider than the roll is flagged for a join", function () {
+  var r = L.stairs({ steps: 12, tread: { value: 10, unit: "in" }, riser: { value: 7, unit: "in" }, width: { value: 5, unit: "m" }, rollWidth: 4, rollUnit: "m" });
+  assert.strictEqual(r.tooWide, true);
+});
+
+test("stairs: price can be per running metre", function () {
+  var r = L.stairs({ steps: 13, tread: { value: 250, unit: "mm" }, riser: { value: 200, unit: "mm" }, width: { value: 900, unit: "mm" }, nosingMm: 25, rollWidth: 4, rollUnit: "m", price: 20, priceUnit: "linm" });
+  assert.strictEqual(r.cost, round2(6.28 * 20));
+  function round2(x){ return Math.round(x*100)/100; }
+});
+
+test("stairs: refuses missing steps or sizes", function () {
+  assert.strictEqual(L.stairs({ steps: 0, tread: { value: 250, unit: "mm" }, riser: { value: 200, unit: "mm" }, width: { value: 900, unit: "mm" } }).reason, "bad-steps");
+  assert.strictEqual(L.stairs({ steps: 13, tread: { value: 0, unit: "mm" }, riser: { value: 200, unit: "mm" }, width: { value: 900, unit: "mm" } }).reason, "bad-step");
+});

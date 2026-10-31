@@ -6,7 +6,7 @@
   var L = window.Layline;
   var $ = function (id) { return document.getElementById(id); };
 
-  var ids = ["room-w", "room-l", "room-unit", "material", "roll-width", "roll-unit", "trim", "repeat", "price", "price-unit"];
+  var ids = ["room-w", "room-l", "room-unit", "material", "roll-width", "roll-unit", "trim", "repeat", "price", "price-unit", "stairs-on", "st-steps", "st-tread", "st-riser", "st-width"];
   var el = {};
   ids.forEach(function (id) { el[id] = $(id); });
   var out = $("out");
@@ -16,7 +16,9 @@
       rw: el["room-w"].value.trim(), rl: el["room-l"].value.trim(), ru: el["room-unit"].value,
       mat: el.material.value, rwid: el["roll-width"].value.trim(), rwu: el["roll-unit"].value,
       trim: el.trim.value.trim(), rep: el.repeat.value.trim(),
-      price: el.price.value.trim(), pu: el["price-unit"].value
+      price: el.price.value.trim(), pu: el["price-unit"].value,
+      son: el["stairs-on"].checked, ss: el["st-steps"].value.trim(), st: el["st-tread"].value.trim(),
+      sr: el["st-riser"].value.trim(), swd: el["st-width"].value.trim()
     };
   }
 
@@ -32,6 +34,11 @@
     if (s.rep != null) el.repeat.value = s.rep;
     if (s.price != null) el.price.value = s.price;
     if (s.pu) el["price-unit"].value = s.pu;
+    if (typeof s.son === "boolean") el["stairs-on"].checked = s.son;
+    if (s.ss != null) el["st-steps"].value = s.ss;
+    if (s.st != null) el["st-tread"].value = s.st;
+    if (s.sr != null) el["st-riser"].value = s.sr;
+    if (s.swd != null) el["st-width"].value = s.swd;
   }
 
   function m(mm) { return (Math.round(mm / 10) / 100).toFixed(2) + " m"; }
@@ -96,8 +103,37 @@
       price: s.price, priceUnit: s.pu
     });
     var kind = render(r);
+    renderStairs(s);
     if (window.Rollo && r.ok) window.Rollo.react(kind);
     syncLink(s);
+  }
+
+  function renderStairs(s) {
+    var fields = $("stairs-fields");
+    var host = $("stairs-out");
+    var on = el["stairs-on"].checked;
+    if (fields) fields.hidden = !on;
+    if (!host) return;
+    if (!on) { host.innerHTML = ""; return; }
+    var r = L.stairs({
+      steps: s.ss, tread: { value: s.st, unit: "mm" }, riser: { value: s.sr, unit: "mm" },
+      width: { value: s.swd, unit: "mm" }, material: s.mat, rollWidth: s.rwid, rollUnit: s.rwu
+    });
+    if (!r.ok) {
+      host.innerHTML = '<div class="result"><h3>Stairs</h3><p class="msg">Fill in the steps, tread, riser and width to plan the flight.</p></div>';
+      return;
+    }
+    var adv = '<ul class="advice">' + r.advice.map(function (a) { return "<li>" + a + "</li>"; }).join("") + "</ul>";
+    host.innerHTML =
+      '<div class="result">' +
+        '<h3>Stairs · ' + r.steps + ' steps · ' + m(r.widthMm) + ' wide</h3>' +
+        '<div class="grid">' +
+          '<div class="cell big"><span class="k">Order</span><span class="v">' + r.runM + ' m</span></div>' +
+          '<div class="cell"><span class="k">Per step</span><span class="v">' + r.perStepMm + ' mm</span></div>' +
+          '<div class="cell"><span class="k">Runs / width</span><span class="v">' + r.runsPerWidth + '</span></div>' +
+        '</div>' +
+        adv +
+      '</div>';
   }
 
   var linkState = "";

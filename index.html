@@ -91,9 +91,37 @@
         </div>
         <p class="hint">Trim is the overlap cut off at each end. A pattern repeat makes each length round up to a whole repeat so the pattern lines up across a seam.</p>
       </fieldset>
+
+      <fieldset class="group">
+        <legend>Stairs (optional)</legend>
+        <label class="check">
+          <input type="checkbox" id="stairs-on">
+          <span>Also work out a straight flight of stairs</span>
+        </label>
+        <div class="field-row" id="stairs-fields" hidden>
+          <label class="field narrow">
+            <span>Steps</span>
+            <input id="st-steps" inputmode="numeric" placeholder="e.g. 13">
+          </label>
+          <label class="field narrow">
+            <span>Tread (mm)</span>
+            <input id="st-tread" inputmode="decimal" placeholder="e.g. 250">
+          </label>
+          <label class="field narrow">
+            <span>Riser (mm)</span>
+            <input id="st-riser" inputmode="decimal" placeholder="e.g. 200">
+          </label>
+          <label class="field narrow">
+            <span>Width (mm)</span>
+            <input id="st-width" inputmode="decimal" placeholder="e.g. 900">
+          </label>
+        </div>
+        <p class="hint">A flight is carpeted in one strip running down the stairs: each step takes the tread plus the riser plus a wrap over the front nosing. Measure every step; stairs are rarely identical.</p>
+      </fieldset>
     </form>
 
     <div class="out" id="out" aria-live="polite"></div>
+    <div class="out" id="stairs-out" aria-live="polite"></div>
 
     <div class="actions">
       <button id="share" class="ghost" type="button">Copy a link to this</button>

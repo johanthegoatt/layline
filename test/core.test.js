@@ -130,3 +130,30 @@ test("stairs: refuses missing steps or sizes", function () {
   assert.strictEqual(L.stairs({ steps: 0, tread: { value: 250, unit: "mm" }, riser: { value: 200, unit: "mm" }, width: { value: 900, unit: "mm" } }).reason, "bad-steps");
   assert.strictEqual(L.stairs({ steps: 13, tread: { value: 0, unit: "mm" }, riser: { value: 200, unit: "mm" }, width: { value: 900, unit: "mm" } }).reason, "bad-step");
 });
+
+// Half-drop (offset) pattern match: wastes more than a straight match, but only
+// where strips sit side by side (a seam). A single seamless drop is unaffected.
+test("half-drop orders more than a straight match when there's a seam", function () {
+  var base = { room: { w: 6, l: 5, unit: "m" }, material: "carpet", rollWidth: 4, rollUnit: "m", trim: 100, repeatMm: 500 };
+  var straight = L.plan(Object.assign({}, base, { halfDrop: false }));
+  var offset = L.plan(Object.assign({}, base, { halfDrop: true }));
+  assert.ok(straight.ok && offset.ok);
+  // the recommended plan here has a seam, so the half-drop costs more length
+  var sBest = straight[straight.recommend];
+  var oBest = offset[offset.recommend];
+  assert.ok(oBest.seams >= 1);
+  assert.ok(oBest.totalLenMm > sBest.totalLenMm, "half-drop needs more length");
+  assert.strictEqual(oBest.halfDrop, true);
+});
+
+test("half-drop makes no difference to a seamless single drop", function () {
+  // a narrow room that fits in one roll width: no seam, so no offset penalty
+  var base = { room: { w: 3, l: 4, unit: "m" }, material: "carpet", rollWidth: 4, rollUnit: "m", trim: 100, repeatMm: 500 };
+  var straight = L.plan(Object.assign({}, base, { halfDrop: false }));
+  var offset = L.plan(Object.assign({}, base, { halfDrop: true }));
+  var sBest = straight[straight.recommend];
+  var oBest = offset[offset.recommend];
+  assert.strictEqual(sBest.seams, 0);
+  assert.strictEqual(oBest.halfDrop, false);
+  assert.strictEqual(oBest.totalLenMm, sBest.totalLenMm);
+});

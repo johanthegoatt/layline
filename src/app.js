@@ -6,7 +6,7 @@
   var L = window.Layline;
   var $ = function (id) { return document.getElementById(id); };
 
-  var ids = ["room-w", "room-l", "room-unit", "material", "roll-width", "roll-unit", "trim", "repeat", "price", "price-unit", "stairs-on", "st-steps", "st-tread", "st-riser", "st-width"];
+  var ids = ["room-w", "room-l", "room-unit", "material", "roll-width", "roll-unit", "trim", "repeat", "half-drop", "price", "price-unit", "stairs-on", "st-steps", "st-tread", "st-riser", "st-width"];
   var el = {};
   ids.forEach(function (id) { el[id] = $(id); });
   var out = $("out");
@@ -15,7 +15,7 @@
     return {
       rw: el["room-w"].value.trim(), rl: el["room-l"].value.trim(), ru: el["room-unit"].value,
       mat: el.material.value, rwid: el["roll-width"].value.trim(), rwu: el["roll-unit"].value,
-      trim: el.trim.value.trim(), rep: el.repeat.value.trim(),
+      trim: el.trim.value.trim(), rep: el.repeat.value.trim(), hd: el["half-drop"].checked ? 1 : 0,
       price: el.price.value.trim(), pu: el["price-unit"].value,
       son: el["stairs-on"].checked, ss: el["st-steps"].value.trim(), st: el["st-tread"].value.trim(),
       sr: el["st-riser"].value.trim(), swd: el["st-width"].value.trim()
@@ -32,6 +32,7 @@
     if (s.rwu) el["roll-unit"].value = s.rwu;
     if (s.trim != null) el.trim.value = s.trim;
     if (s.rep != null) el.repeat.value = s.rep;
+    if (s.hd != null) el["half-drop"].checked = !!s.hd;
     if (s.price != null) el.price.value = s.price;
     if (s.pu) el["price-unit"].value = s.pu;
     if (typeof s.son === "boolean") el["stairs-on"].checked = s.son;
@@ -100,6 +101,7 @@
       rollWidth: s.rwid, rollUnit: s.rwu,
       trim: s.trim === "" ? 100 : parseFloat(s.trim) * (s.rwu === "ft" ? 304.8 : 10), // trim typed in cm (or inches for ft rolls)
       repeatMm: s.rep === "" ? 0 : parseFloat(s.rep) * 10, // repeat typed in cm
+      halfDrop: !!s.hd,
       price: s.price, priceUnit: s.pu
     });
     var kind = render(r);

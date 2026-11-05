@@ -58,16 +58,27 @@
   //             where patterned goods waste the most
   //   seams     drops minus one, each running the length of the room
   //   lastStrip width of the final (narrowest) strip across the room
-  function orient(alongMm, acrossMm, rollMm, trimMm, repeatMm) {
+  function orient(alongMm, acrossMm, rollMm, trimMm, repeatMm, halfDrop) {
     if (!(alongMm > 0) || !(acrossMm > 0) || !(rollMm > 0)) return null;
     var drops = Math.ceil(acrossMm / rollMm - 1e-9);
     if (drops < 1) drops = 1;
     var dropLen = alongMm + trimMm;
     var repeated = false;
+    var offset = false;
     if (repeatMm > 0) {
       var r = Math.ceil((dropLen - 1e-6) / repeatMm) * repeatMm;
       repeated = r > dropLen + 1e-6 || drops > 1;
       dropLen = r;
+      // A half-drop (offset) match steps the pattern down half a repeat on every
+      // other strip, so a strip has to start half a repeat further along to meet
+      // its neighbour across the seam. Costing each drop half a repeat longer
+      // spreads that extra across the run, which is the safe way to order. It
+      // only matters when strips sit side by side, so a single seamless drop is
+      // unaffected.
+      if (halfDrop && drops > 1) {
+        dropLen += repeatMm / 2;
+        offset = true;
+      }
     }
     var totalLen = drops * dropLen;
     var lastStrip = acrossMm - (drops - 1) * rollMm;
@@ -81,7 +92,8 @@
       lastStripMm: Math.round(lastStrip),
       rollWidthMm: rollMm,
       areaBoughtM2: round2(areaBought),
-      patternRounded: repeated && repeatMm > 0
+      patternRounded: repeated && repeatMm > 0,
+      halfDrop: offset
     };
   }
 
@@ -100,6 +112,7 @@
     var rollMm = toMm(opts.rollWidth, opts.rollUnit || "m");
     var trim = isFinite(parseFloat(opts.trim)) ? Math.max(0, parseFloat(opts.trim)) : 100;
     var repeatMm = isFinite(parseFloat(opts.repeatMm)) ? Math.max(0, parseFloat(opts.repeatMm)) : 0;
+    var halfDrop = !!opts.halfDrop;
     var material = ROLLS[opts.material] ? opts.material : "carpet";
 
     if (!(w > 0) || !(l > 0)) return { ok: false, reason: "bad-room" };
@@ -108,8 +121,8 @@
     var roomAreaM2 = round2((w / 1000) * (l / 1000));
 
     // Orientation A: drops run the length (across = width). B: the other way.
-    var lengthwise = orient(l, w, rollMm, trim, repeatMm);
-    var widthwise = orient(w, l, rollMm, trim, repeatMm);
+    var lengthwise = orient(l, w, rollMm, trim, repeatMm, halfDrop);
+    var widthwise = orient(w, l, rollMm, trim, repeatMm, halfDrop);
 
     [lengthwise, widthwise].forEach(function (o) {
       if (!o) return;
@@ -145,6 +158,7 @@
       pile: ROLLS[material].pile,
       trimMm: Math.round(trim),
       repeatMm: Math.round(repeatMm),
+      halfDrop: halfDrop,
       lengthwise: lengthwise,
       widthwise: widthwise,
       recommend: rec,
@@ -176,6 +190,9 @@
     }
     if (best.patternRounded) {
       tips.push("Each length is cut to a whole pattern repeat so the pattern lines up, which is where a patterned floor wastes the most.");
+    }
+    if (best.halfDrop) {
+      tips.push("A half-drop (offset) pattern steps down half a repeat on every other strip, so it lines up on the diagonal and uses more than a straight match. I've allowed half a repeat extra per length so you won't come up short.");
     }
     tips.push("Planning figures only. Measure the widest points, add for alcoves and the doorway, and ask the shop to confirm the roll width before you order.");
     return tips;

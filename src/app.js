@@ -6,7 +6,7 @@
   var L = window.Layline;
   var $ = function (id) { return document.getElementById(id); };
 
-  var ids = ["room-w", "room-l", "room-unit", "material", "roll-width", "roll-unit", "trim", "repeat", "half-drop", "price", "price-unit", "stairs-on", "st-steps", "st-tread", "st-riser", "st-width"];
+  var ids = ["room-w", "room-l", "room-unit", "material", "roll-width", "roll-unit", "trim", "repeat", "half-drop", "price", "price-unit", "stairs-on", "st-steps", "st-tread", "st-riser", "st-width", "planks-on", "pack-cov", "plank-pattern", "plank-waste"];
   var el = {};
   ids.forEach(function (id) { el[id] = $(id); });
   var out = $("out");
@@ -18,7 +18,9 @@
       trim: el.trim.value.trim(), rep: el.repeat.value.trim(), hd: el["half-drop"].checked ? 1 : 0,
       price: el.price.value.trim(), pu: el["price-unit"].value,
       son: el["stairs-on"].checked, ss: el["st-steps"].value.trim(), st: el["st-tread"].value.trim(),
-      sr: el["st-riser"].value.trim(), swd: el["st-width"].value.trim()
+      sr: el["st-riser"].value.trim(), swd: el["st-width"].value.trim(),
+      pon: el["planks-on"].checked, pcov: el["pack-cov"].value.trim(),
+      ppat: el["plank-pattern"].value, pw: el["plank-waste"].value.trim()
     };
   }
 
@@ -40,6 +42,10 @@
     if (s.st != null) el["st-tread"].value = s.st;
     if (s.sr != null) el["st-riser"].value = s.sr;
     if (s.swd != null) el["st-width"].value = s.swd;
+    if (typeof s.pon === "boolean") el["planks-on"].checked = s.pon;
+    if (s.pcov != null) el["pack-cov"].value = s.pcov;
+    if (s.ppat) el["plank-pattern"].value = s.ppat;
+    if (s.pw != null) el["plank-waste"].value = s.pw;
   }
 
   function m(mm) { return (Math.round(mm / 10) / 100).toFixed(2) + " m"; }
@@ -106,8 +112,40 @@
     });
     var kind = render(r);
     renderStairs(s);
+    renderPlanks(s);
     if (window.Rollo && r.ok) window.Rollo.react(kind);
     syncLink(s);
+  }
+
+  function renderPlanks(s) {
+    var fields = $("planks-fields");
+    var host = $("planks-out");
+    var on = el["planks-on"].checked;
+    if (fields) fields.hidden = !on;
+    if (!host) return;
+    if (!on) { host.innerHTML = ""; return; }
+    var r = L.planks({
+      width: { value: s.rw, unit: s.ru }, length: { value: s.rl, unit: s.ru },
+      packCoverage: s.pcov, pattern: s.ppat,
+      extraWaste: s.pw === "" ? undefined : s.pw
+    });
+    if (!r.ok) {
+      var msg = r.reason === "bad-pack" ? "Enter how many square metres one pack covers (it's on the box)." : "Enter the room size above to work out the packs.";
+      host.innerHTML = '<div class="result"><h3>Hard flooring by the pack</h3><p class="msg">' + msg + '</p></div>';
+      return;
+    }
+    var adv = '<ul class="advice">' + r.advice.map(function (a) { return "<li>" + a + "</li>"; }).join("") + "</ul>";
+    host.innerHTML =
+      '<div class="result">' +
+        '<h3>By the pack · ' + r.areaM2 + ' m² · ' + r.patternLabel + '</h3>' +
+        '<div class="grid">' +
+          '<div class="cell big"><span class="k">Packs</span><span class="v">' + r.packs + '</span></div>' +
+          '<div class="cell"><span class="k">With waste</span><span class="v">' + r.areaNeeded + ' m²</span></div>' +
+          '<div class="cell"><span class="k">Margin</span><span class="v">' + r.wastePct + '%</span></div>' +
+          '<div class="cell"><span class="k">Over</span><span class="v">' + r.leftoverArea + ' m²</span></div>' +
+        '</div>' +
+        adv +
+      '</div>';
   }
 
   function renderStairs(s) {

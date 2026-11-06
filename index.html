@@ -124,10 +124,38 @@
         </div>
         <p class="hint">A flight is carpeted in one strip running down the stairs: each step takes the tread plus the riser plus a wrap over the front nosing. Measure every step; stairs are rarely identical.</p>
       </fieldset>
+
+      <fieldset class="group">
+        <legend>Hard flooring by the pack (optional)</legend>
+        <label class="check">
+          <input type="checkbox" id="planks-on">
+          <span>Laminate, LVT or engineered board instead (sold by the pack)</span>
+        </label>
+        <div class="field-row" id="planks-fields" hidden>
+          <label class="field">
+            <span>Pack covers (m²)</span>
+            <input id="pack-cov" inputmode="decimal" placeholder="e.g. 2.2">
+          </label>
+          <label class="field">
+            <span>Laid</span>
+            <select id="plank-pattern">
+              <option value="straight">Straight / along the room</option>
+              <option value="diagonal">Diagonal (45°)</option>
+              <option value="herringbone">Herringbone / chevron</option>
+            </select>
+          </label>
+          <label class="field narrow">
+            <span>Waste % (optional)</span>
+            <input id="plank-waste" inputmode="decimal" placeholder="auto">
+          </label>
+        </div>
+        <p class="hint">Uses the room size above. Plank floors are bought by the pack, so you order the area plus a cutting margin and round up to whole packs: more for a diagonal or herringbone lay, and a little more in a small room. Check the coverage on the pack.</p>
+      </fieldset>
     </form>
 
     <div class="out" id="out" aria-live="polite"></div>
     <div class="out" id="stairs-out" aria-live="polite"></div>
+    <div class="out" id="planks-out" aria-live="polite"></div>
 
     <div class="actions">
       <button id="share" class="ghost" type="button">Copy a link to this</button>

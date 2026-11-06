@@ -157,3 +157,49 @@ test("half-drop makes no difference to a seamless single drop", function () {
   assert.strictEqual(oBest.halfDrop, false);
   assert.strictEqual(oBest.totalLenMm, sBest.totalLenMm);
 });
+
+test("planks: area times the waste margin, rounded up to whole packs", () => {
+  // 5 x 4 = 20 m2, straight 10% -> 22 m2 needed; 2.2 m2/pack -> 10 packs
+  const r = L.planks({
+    width: { value: 5, unit: "m" }, length: { value: 4, unit: "m" },
+    packCoverage: 2.2, pattern: "straight"
+  });
+  assert.ok(r.ok);
+  assert.strictEqual(r.areaM2, 20);
+  assert.strictEqual(r.wastePct, 10);
+  assert.strictEqual(r.packs, 10);
+  assert.strictEqual(r.boughtArea, 22);
+});
+
+test("planks: a fancier lay pattern orders a bigger margin", () => {
+  const base = { width: { value: 5, unit: "m" }, length: { value: 4, unit: "m" }, packCoverage: 2.2 };
+  const straight = L.planks(Object.assign({}, base, { pattern: "straight" }));
+  const herring = L.planks(Object.assign({}, base, { pattern: "herringbone" }));
+  assert.strictEqual(straight.wastePct, 10);
+  assert.strictEqual(herring.wastePct, 20);
+  assert.ok(herring.packs >= straight.packs);
+});
+
+test("planks: a small room gets a little extra margin", () => {
+  // 2 x 2 = 4 m2 < 10, straight 10 + 5 = 15%
+  const small = L.planks({ width: { value: 2, unit: "m" }, length: { value: 2, unit: "m" }, packCoverage: 2, pattern: "straight" });
+  assert.strictEqual(small.smallRoom, true);
+  assert.strictEqual(small.wastePct, 15);
+});
+
+test("planks: an explicit waste override wins over the pattern band", () => {
+  const r = L.planks({ areaM2: 20, packCoverage: 2.2, pattern: "herringbone", extraWaste: 8 });
+  assert.strictEqual(r.wastePct, 8);
+});
+
+test("planks: a direct area in m2 is accepted", () => {
+  const r = L.planks({ areaM2: 30, packCoverage: 2.5, pattern: "straight" });
+  assert.ok(r.ok);
+  // 30 x 1.10 = 33 -> 2.5 m2/pack -> 14 packs (33/2.5 = 13.2)
+  assert.strictEqual(r.packs, 14);
+});
+
+test("planks: missing room or pack coverage is reported, not guessed", () => {
+  assert.strictEqual(L.planks({ packCoverage: 2 }).reason, "bad-room");
+  assert.strictEqual(L.planks({ areaM2: 20 }).reason, "bad-pack");
+});

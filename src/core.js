@@ -280,6 +280,79 @@
   // The whole input goes in the URL fragment, which a browser never sends to a
   // server, so a shared link reopens on the same plan without anything leaving
   // the device.
+  // Hard flooring (laminate, LVT, engineered board) is a different problem: it
+  // is not off a roll, it is sold by the PACK, each covering a stated area. You
+  // can't buy an exact square-metre figure, and every plank cut at a wall leaves
+  // an offcut, so you order the room area plus a waste margin and round up to
+  // whole packs. The margin depends on how the planks run: straight along the
+  // room wastes least, a diagonal more, and a herringbone most, because every
+  // plank meets a wall or the centre line at an angle and the offcut is harder
+  // to reuse. A small or awkward room wastes more again. Manufacturers also say
+  // to keep a little back from the same batch for a later repair, since a new
+  // batch rarely matches. Figures follow the common trade bands; confirm the
+  // pack's own coverage on the box.
+  var PLANK_WASTE = {
+    straight: { label: "Straight / along the room", pct: 10 },
+    diagonal: { label: "Diagonal (45 degrees)", pct: 15 },
+    herringbone: { label: "Herringbone / chevron", pct: 20 }
+  };
+
+  function planks(opts) {
+    opts = opts || {};
+    var w = toMm(opts.width && opts.width.value, opts.width && opts.width.unit);
+    var l = toMm(opts.length && opts.length.value, opts.length && opts.length.unit);
+    var areaM2;
+    if (opts.areaM2 > 0) areaM2 = opts.areaM2;        // area given directly, in m2
+    else if (w > 0 && l > 0) areaM2 = (w * l) / 1e6;  // or worked out from the room sides
+    if (!(areaM2 > 0)) return { ok: false, reason: "bad-room" };
+
+    var coverage = typeof opts.packCoverage === "number" ? opts.packCoverage : parseFloat(opts.packCoverage);
+    if (!(coverage > 0)) return { ok: false, reason: "bad-pack" };
+
+    var patKey = PLANK_WASTE[opts.pattern] ? opts.pattern : "straight";
+    var base = PLANK_WASTE[patKey].pct;
+    // A small room gives a cut plank fewer places to be reused, so the usual
+    // advice is a little more waste under about 10 square metres.
+    var smallRoom = areaM2 < 10;
+    var over = parseFloat(opts.extraWaste);
+    var wastePct = isFinite(over) && over >= 0 ? over : base + (smallRoom ? 5 : 0);
+
+    var areaNeeded = areaM2 * (1 + wastePct / 100);
+    var packs = Math.ceil((areaNeeded - 1e-9) / coverage);
+    var bought = round2(packs * coverage);
+    var leftover = round2(bought - round2(areaM2));
+    var leftoverPct = Math.round((leftover / areaM2) * 100);
+
+    var out = {
+      ok: true,
+      areaM2: round2(areaM2),
+      pattern: patKey,
+      patternLabel: PLANK_WASTE[patKey].label,
+      wastePct: Math.round(wastePct),
+      smallRoom: smallRoom,
+      coverage: round2(coverage),
+      areaNeeded: round2(areaNeeded),
+      packs: packs,
+      boughtArea: bought,
+      leftoverArea: leftover,
+      leftoverPct: leftoverPct
+    };
+    out.advice = advisePlanks(out);
+    return out;
+  }
+
+  function advisePlanks(r) {
+    var tips = [];
+    tips.push("Order " + r.packs + " pack" + (r.packs === 1 ? "" : "s") + ": the floor is " + r.areaM2 +
+      " m2, plus a " + r.wastePct + "% cutting margin for a " + r.patternLabel.toLowerCase() + " lay, rounded up to whole packs.");
+    if (r.smallRoom) tips.push("It's a small floor, so a cut plank has fewer places to go; the margin is a little higher than it would be in a big open room.");
+    if (r.leftoverArea > 0) tips.push("That leaves about " + r.leftoverArea + " m2 over (" + r.leftoverPct +
+      "%). Keep a few boards back from this batch for a later repair, because a new batch rarely matches the colour exactly.");
+    tips.push("Let the packs sit in the room a day or two before laying so the boards settle to the room's temperature, and mix boards from different packs as you go so any shade difference is spread out.");
+    tips.push("Planning figure. Check the coverage printed on the pack, since it varies by range, and order every pack from the same batch number.");
+    return tips;
+  }
+
   function pack(state) {
     var json = JSON.stringify(state);
     var b64 = typeof btoa === "function" ? btoa(unescape(encodeURIComponent(json))) : Buffer.from(json, "utf8").toString("base64");
@@ -300,6 +373,7 @@
     IN: IN, TO_MM: TO_MM, ROLLS: ROLLS,
     toMm: toMm, roundTo: roundTo,
     orient: orient, plan: plan, advise: advise, stairs: stairs,
+    PLANK_WASTE: PLANK_WASTE, planks: planks, advisePlanks: advisePlanks,
     pack: pack, unpack: unpack
   };
 });
